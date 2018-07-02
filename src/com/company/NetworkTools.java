@@ -10,8 +10,9 @@ public class NetworkTools {
     private List<Integer> train_order = IntStream.range(0, 1200).boxed().collect(Collectors.toList());
     private List<Double> networks_mse = new ArrayList<>();
     private List<List<Double>> networks_mse_array = new ArrayList<>();
-    private List<Network> networkList = new ArrayList<>();
     private DataReader networkData = new DataReader();
+    private List<Network> networkList = new ArrayList<>();
+
 
     NetworkTools() throws IOException {
     }
@@ -72,6 +73,7 @@ public class NetworkTools {
             }
         }
     }
+
     private void check_networks_mse (){
         for (Iterator<Network> it_net = networkList.iterator(); it_net.hasNext(); ) {
 
@@ -120,9 +122,16 @@ public class NetworkTools {
         return true;
     }
 
-    private List<Network> make_network_array(int networks_num, int min_layer_number, int max_layer_number, int min_neurons_number,
+    private void print_network_sizes(int created_net_num){
+        System.out.println("The following network sizes have been created:");
+        for (Network net: networkList) {
+            System.out.println(Arrays.toString(net.getNETWORK_LAYER_SIZES()));
+        }
+        System.out.println("Total number of created network is " + created_net_num);
+    }
+
+    private void make_network_array(int networks_num, int min_layer_number, int max_layer_number, int min_neurons_number,
                                            int max_neurons_number, int step) {
-        List<Network> networkList = new ArrayList<>();
         max_neurons_number = (max_neurons_number-min_neurons_number)/step*step+min_neurons_number;
         int created_net_num = 0;
         for (int layer_num = min_layer_number; layer_num <= max_layer_number; layer_num++) {
@@ -141,57 +150,63 @@ public class NetworkTools {
                         }
                     }
                 }
-                for(int b : layer_sizes){
-                    System.out.print(" "+b);
-                }
-                System.out.println();
                 if(are_all_equal_to(layer_sizes, max_neurons_number)){
                     if(created_net_num < networks_num){
-                        Network network = new Network(layer_sizes);
+                        Network network = new Network(layer_sizes.clone());
                         networkList.add(network);
                         created_net_num += 1;
                         break;
 
                     }else{
-                        System.out.println("The " + created_net_num + " have been created");
-                        return networkList;
+                        print_network_sizes(created_net_num);
+                        return;
                     }
                 }else if(are_all_lower_than(layer_sizes, max_neurons_number)){
                     if(created_net_num < networks_num){
-                        Network network = new Network(layer_sizes);
+                        Network network = new Network(layer_sizes.clone());
                         networkList.add(network);
                         created_net_num += 1;
                         layer_sizes[1] += step;
                     }else{
-                        System.out.println("The " + created_net_num + " have been created");
-                        return networkList;
+                        print_network_sizes(created_net_num);
+                       return;
                     }
                 }else
                     break;
                 }
-            }
-        System.out.println("The " + created_net_num + " have been created");
-        for(Network net : networkList){
-            for(int i : (net.NETWORK_LAYER_SIZES)){
-                System.out.print(i);
-            }
-            System.out.println();
         }
-    return networkList;
+        print_network_sizes(created_net_num);
+        return;
     }
 
     public void mainTrainNetwork(int max_iterations, double max_mse_to_save, double min_mse, double eta,
                                         boolean shuffle_input, boolean save_mse_data, int additional_emph_num, int emph_repeat,
-                                        int... network_layer_sizes) throws Exception{
+                                        int... network_layer_sizes){
+        // creating specific network
         networkList.add(new Network(network_layer_sizes));
+
+        // looping training process for specific iteration number
         for(int current_iteration = 1; current_iteration <= max_iterations; current_iteration++){
+
+            //shuffling input array for better learning efficiency
             if(shuffle_input) {
                 Collections.shuffle(train_order);
             }
+
+            // training all networks with loaded data
             trainNetworks(eta);
+
+            // check each network mse
             check_networks_mse();
+
+            // training specific number of input with biggest error in determine repeates
             emphasizing_scheme(additional_emph_num, emph_repeat, eta);
-            System.out.println("current iteration is " + current_iteration + " with " + Collections.min(networks_mse) + " mse");
+
+            // printing details of training process
+            System.out.println("current iteration is " + current_iteration
+                    + " with " + Collections.min(networks_mse) + " mse");
+
+            // cleaning mse arrays for next iteration
             networks_mse_array.removeAll(networks_mse_array);
             networks_mse.removeAll(networks_mse);
         }
@@ -201,18 +216,33 @@ public class NetworkTools {
                                          int max_neurons_number, int step, int max_iterations, double max_mse_to_save,
                                          double min_mse, double eta, boolean shuffle_input, boolean save_mse_data,
                                          int additional_emph_num, int emph_repeat){
+
+        // generating an arraylist of networks with different layer sizes
+        make_network_array(networks_num,min_layer_number,max_layer_number,min_neurons_number,max_neurons_number,step);
+
+        // looping training process for specific iteration number
         for(int current_iteration = 1; current_iteration <= max_iterations; current_iteration++){
+
+            //shuffling input array for better learning efficiency
             if(shuffle_input) {
                 Collections.shuffle(train_order);
             }
 
-            make_network_array(networks_num,min_layer_number,max_layer_number,min_neurons_number,max_neurons_number,step);
+            // training all networks with loaded data
             trainNetworks(eta);
+
+            // check each network mse
             check_networks_mse();
+
+            // training specific number of input with biggest error in determine repeates
             emphasizing_scheme(additional_emph_num, emph_repeat, eta);
-            System.out.println("current iteration is" + current_iteration);
-            System.out.println("worst mse is" + Collections.max(networks_mse));
-            System.out.println("best mse is" + Collections.min(networks_mse));
+
+            // printing details of training process
+            System.out.println("current iteration is " + current_iteration
+                    + " with best mse " + Collections.min(networks_mse)
+                    + " and worst mse " + Collections.max(networks_mse));
+
+            // cleaning mse arrays for next iteration
             networks_mse_array.removeAll(networks_mse_array);
             networks_mse.removeAll(networks_mse);
         }

@@ -8,7 +8,7 @@ public class Network{
     private double[][] error_signal;
     private double[][] output_derivative;
 
-    public final int[] NETWORK_LAYER_SIZES;
+    private final int[] NETWORK_LAYER_SIZES;
     private final int INPUT_SIZE;
     private final int NETWORK_SIZE;
     private final int OUTPUT_SIZE;
@@ -96,5 +96,9 @@ public class Network{
 
     public int getOUTPUT_SIZE() {
         return OUTPUT_SIZE;
+    }
+
+    public int[] getNETWORK_LAYER_SIZES() {
+        return NETWORK_LAYER_SIZES;
     }
 }
